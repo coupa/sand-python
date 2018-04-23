@@ -30,13 +30,13 @@ MIDDLEWARE_CLASSES = (
 )
 
 SAND_SERVICE = {
-    "SAND_CLIENT_ID": 'coupa-development',
-    "SAND_CLIENT_SECRET": 'cX0@kM^Jwua(-$56.?aQo*Pl',
-    "SAND_TOKEN_URL": 'https://sand-dev.io.coupadev.com/oauth2/token',
-    "SAND_TOKEN_VERIFY_URL": 'https://sand-dev.io.coupadev.com/warden/token/allowed',
-    "SAND_SERVICE_SCOPES": "hydra coupa",
-    "SAND_TARGET_SCOPES": "coupa",
-    "SAND_SERVICE_RESOURCE": 'coupa:service:fds-dev.io.coupadev.com',
+    "SAND_CLIENT_ID": ''
+    "SAND_CLIENT_SECRET": ''
+    "SAND_TOKEN_URL": ''
+    "SAND_TOKEN_VERIFY_URL": ''
+    "SAND_SERVICE_SCOPES": "",
+    "SAND_TARGET_SCOPES": "",
+    "SAND_SERVICE_RESOURCE": '',
     "SAND_TOKEN_CACHE_TTL": 3600,
 }
 ```
