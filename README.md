@@ -61,8 +61,10 @@ SAND_SERVICE = {
 
 from sand_python.sand_client import ApiRequest
 API_REQUEST = ApiRequest()
+```
 
 In the application for making a post request to a Micro Service:
 
+```
 settings.API_REQUEST.post('<API URL>', request_headers={}, request_body="")
 ```
