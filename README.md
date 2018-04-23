@@ -10,7 +10,9 @@ When a service receives a request with an OAuth bearer token, it verifies the to
 * The authentication is done using the "client credentials" grant type in OAuth2.
 * The tokens are cached on both the client and the service sides. The cache store is configurable to use a cache store like Rails.cache.
 
-## Instruction
+## Instructions
+
+### For Micro Service
 
 ```
 pip install -e https://github.com/coupa/sand-python
