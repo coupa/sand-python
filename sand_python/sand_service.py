@@ -41,10 +41,6 @@ class SandService(object):
             raise ServiceTokenError('Did not find any authentication token')
 
     def get_service_token(self):
-        print settings
-        print settings.SAND_SERVICE_SCOPES
-        print settings.SAND_CLIENT_ID
-        print settings.SAND_CLIENT_SECRET
         service_token = settings.CACHE.get('SERVICE_TOKEN')
         if service_token == None:
             data = [('grant_type', 'client_credentials'), ('scope', settings.SAND_SERVICE_SCOPES)]
