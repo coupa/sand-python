@@ -24,8 +24,6 @@ class ServiceTokenError(Exception):
 
 
 class SandService(object):
-    #def __init__(self, get_response=None):
-    #    self.get_response = get_response
 
     def get_client_token(self, request):
         try:
