@@ -108,14 +108,14 @@ STATIC_URL = '/static/'
 SAND_SERVICE = {
     "SAND_CLIENT_ID": 'c-d',
     "SAND_CLIENT_SECRET": 'cL',
-    "SAND_TOKEN_URL": 'https://sand-dev.io.coupadev.com/oauth2/token',
-    "SAND_TOKEN_VERIFY_URL": 'https://sand-dev.io.coupadev.com/warden/token/allowed',
-    "SAND_SERVICE_SCOPES": "hydra coupa",
-    "SAND_TARGET_SCOPES": "coupa",
-    "SAND_SERVICE_RESOURCE": 'coupa:service:fds-dev.io.coupadev.com',
+    "SAND_TOKEN_URL": 'http://sand-py-test/token',
+    "SAND_TOKEN_VERIFY_URL": 'http://sand-py-test/token_verify',
+    "SAND_SERVICE_SCOPES": "",
+    "SAND_TARGET_SCOPES": "",
+    "SAND_SERVICE_RESOURCE": '',
     "SAND_TOKEN_CACHE_TTL": 1,
 }
 
 from sand_python.sand_client import ApiRequest
-API_REQUEST = ApiRequest()
+API_REQUEST = ApiRequest("sand_token_url", "sand_client_id", "sand_client_secret", 'cache')
 
