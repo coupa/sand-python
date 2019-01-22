@@ -12,7 +12,7 @@ from sand_exceptions import SandError
 
 class SandService():
     """
-    Sand Authentication integrated into Flask
+    Sand Authentication
     """
 
     def __init__(self, sand_token_site, sand_client_id, sand_client_secret, sand_target_scopes, sand_service_scopes, sand_cache):
