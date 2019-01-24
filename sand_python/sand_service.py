@@ -13,6 +13,7 @@ from sand_exceptions import SandError
 class SandService():
     """
     Sand Authentication
+        scopes is an array of scopes like ["hydra", "coupa"]
     """
 
     def __init__(self, sand_token_site, sand_client_id, sand_client_secret, sand_target_scopes, sand_service_scopes, sand_cache):
@@ -32,15 +33,18 @@ class SandService():
         self.sand_service_resource = 'coupa:service:'+sand_client_id if sand_client_id else None
         self.cache = sand_cache
 
+    def get_service_token(self):
+        scope = self.__service_scope()
+        return self.get_token(scope)
 
-    def get_token(self, sand_type='service'):
+    def get_client_token(self):
+        scope = self.__client_scope()
+        return self.get_token(scope)
+
+    def get_token(self, scope):
         """
         Requests a new service token for itself based on type of request. Either acting as a client or service
         """
-        if sand_type == 'service':
-            scope = self.__service_scope()
-        else:
-            scope = self.__client_scope()
         service_token = self.cache.get('SERVICE_TOKEN'+'_'+scope)
         if service_token is None:
             data = [('grant_type', 'client_credentials'), ('scope', scope)]
@@ -67,7 +71,7 @@ class SandService():
         """
         Validates incoming requests with their client_token
         """
-        client_token = self.__get_client_token(request)
+        client_token = self.__extract_client_token(request)
         # Check if the client request and token are in cache
         get_ret_data = self.cache.get(self.__get_client_token_cache_key(client_token))
         # If matches with cached key, clear to load the view
@@ -75,20 +79,20 @@ class SandService():
             return get_ret_data
         # To validate with SAND, first get our own token
         try:
-            service_token = self.get_token()
+            service_token = self.get_service_token()
         except SandError:
             raise SandError('Service not able to authenticate with SAND', 502)
         # Validate the new client token with SAND
         return self.__validate_with_sand(client_token, service_token, opts)
 
 
-    def __get_client_token(self, request):
+    def __extract_client_token(self, request):
         try:
             if request.headers['Authorization'].lower().startswith('bearer'):
                 pattern = re.compile('Bearer *', re.IGNORECASE)
                 token = pattern.sub('', request.headers['Authorization'])
                 if token == "":
-                    raise SandError('Did not find any authentication token', 401)
+                    raise SandError('Failed to extract token from the request', 401)
                 return token
             raise SandError('Did not find any authentication token', 401)
         except KeyError:

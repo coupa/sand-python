@@ -8,6 +8,9 @@ from sand_exceptions import SandError
 from sand_service import SandService
 from sand_client import SandRequest
 
+####   To run the tests use the following command
+####   pytest --pyargs test.py
+
 ## Different type of mocked requests for external API calls via request
 
 class MockResponse:
@@ -83,7 +86,7 @@ SAND_CACHE = FileSystemCache(SAND_CACHE_DIR)
 ###### Test Sand Service (Incoming Requests)
 ###### This tests the authentication method by importing sand directly
 # Test successful validation
-@mock.patch('sand_service.requests.post', side_effect=mocked_requests_response1)
+@mock.patch('sand_python.sand_service.requests.post', side_effect=mocked_requests_response1)
 def test_sand_service(mock1):
     sand = SandService('http://sand-py-test', 'A', 'B', 'C', 'D', SAND_CACHE)
     is_valid = sand.validate_request(sand_req_from_client)['allowed']
@@ -97,7 +100,7 @@ def test_sand_service(mock1):
     sand.cache.clear()
 
 # Test denied request after getting good service token
-@mock.patch('sand_service.requests.post', side_effect=mocked_requests_response2)
+@mock.patch('sand_python.sand_service.requests.post', side_effect=mocked_requests_response2)
 def test_sand_service_request_denied(mock1):
     sand = SandService('http://sand-py-test', 'A', 'B', 'C', 'D', SAND_CACHE)
     is_valid = sand.validate_request(sand_req_from_client)['allowed']
@@ -106,7 +109,7 @@ def test_sand_service_request_denied(mock1):
     sand.cache.clear()
 
 # Also test denied request after getting good service token but for invalid request
-@mock.patch('sand_service.requests.post', side_effect=mocked_requests_response4)
+@mock.patch('sand_python.sand_service.requests.post', side_effect=mocked_requests_response4)
 def test_sand_service_request_denied_2(mock1):
     try:
         sand = SandService('http://sand-py-test', 'A', 'B', 'C', 'D', SAND_CACHE)
@@ -131,7 +134,7 @@ def test_sand_service_invalid_url():
     sand.cache.clear()
 
 # Test failed to get service token from sand due to authentication issue
-@mock.patch('sand_service.requests.post', side_effect=mocked_requests_response3)
+@mock.patch('sand_python.sand_service.requests.post', side_effect=mocked_requests_response3)
 def test_sand_service_cannot_get_token(mock1):
     try:
         sand = SandService('http://sand-py-test', 'A', 'B', 'C', 'D', SAND_CACHE)
@@ -152,7 +155,7 @@ app_sand_service = SandService(SAND_TOKEN_SITE,
                                SAND_CACHE)
 
 # Test Sand Client with external service down
-@mock.patch('sand_service.requests.post', side_effect=mocked_requests_response1)
+@mock.patch('sand_python.sand_service.requests.post', side_effect=mocked_requests_response1)
 def test_sand_request_external_service_down(mock1):
     #create_global_sand(client)
     sand_req = SandRequest()
@@ -164,8 +167,8 @@ def test_sand_request_external_service_down(mock1):
         assert True is False
 
 # Test Sand Client successfully
-@mock.patch('sand_service.requests.post', side_effect=mocked_requests_response1)
-@mock.patch('sand_client.requests.Session.send', side_effect=mocked_requests_response5)
+@mock.patch('sand_python.sand_service.requests.post', side_effect=mocked_requests_response1)
+@mock.patch('sand_python.sand_client.requests.Session.send', side_effect=mocked_requests_response5)
 def test_sand_request(mock1, mock2):
     #create_global_sand(client)
     sand_req = SandRequest()
@@ -173,8 +176,8 @@ def test_sand_request(mock1, mock2):
     assert resp.status_code is 200
 
 # Test Sand Client with retries
-@mock.patch('sand_service.requests.post', side_effect=mocked_requests_response1)
-@mock.patch('sand_client.requests.Session.send', side_effect=mocked_requests_response5)
+@mock.patch('sand_python.sand_service.requests.post', side_effect=mocked_requests_response1)
+@mock.patch('sand_python.sand_client.requests.Session.send', side_effect=mocked_requests_response5)
 def test_sand_request_retries(mock1, mock2):
     #create_global_sand(client)
     sand_req = SandRequest()

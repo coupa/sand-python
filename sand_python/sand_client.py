@@ -27,10 +27,10 @@ class SandRequest():
         #sand_api = current_app.sand_service
 
         if request_headers is not None:
-            request_headers['Authorization'] = 'Bearer ' + sand_api.get_token('client')
+            request_headers['Authorization'] = 'Bearer ' + sand_api.get_client_token()
         else:
             request_headers = {
-                'Authorization': 'Bearer ' + sand_api.get_token('client'),
+                'Authorization': 'Bearer ' + sand_api.get_client_token(),
             }
         return request_headers
 
