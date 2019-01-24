@@ -89,11 +89,11 @@ SAND_CACHE = FileSystemCache(SAND_CACHE_DIR)
 @mock.patch('sand_python.sand_service.requests.post', side_effect=mocked_requests_response1)
 def test_sand_service(mock1):
     sand = SandService('http://sand-py-test', 'A', 'B', 'C', 'D', SAND_CACHE)
-    is_valid = sand.validate_request(sand_req_from_client)['allowed']
+    is_valid = sand.validate_request(sand_req_from_client, sand_req_from_client.headers)['allowed']
     assert is_valid is True
     # Also test cache
     sand = SandService('http://asdfghjkl', 'A', 'B', 'C', 'D', SAND_CACHE)
-    is_valid = sand.validate_request(sand_req_from_client)['allowed']
+    is_valid = sand.validate_request(sand_req_from_client, sand_req_from_client.headers)['allowed']
     # would've been False without cache
     assert is_valid is True
     # Clear cache
@@ -103,7 +103,7 @@ def test_sand_service(mock1):
 @mock.patch('sand_python.sand_service.requests.post', side_effect=mocked_requests_response2)
 def test_sand_service_request_denied(mock1):
     sand = SandService('http://sand-py-test', 'A', 'B', 'C', 'D', SAND_CACHE)
-    is_valid = sand.validate_request(sand_req_from_client)['allowed']
+    is_valid = sand.validate_request(sand_req_from_client, sand_req_from_client.headers)['allowed']
     assert is_valid is False
     # Clear cache
     sand.cache.clear()
@@ -113,7 +113,7 @@ def test_sand_service_request_denied(mock1):
 def test_sand_service_request_denied_2(mock1):
     try:
         sand = SandService('http://sand-py-test', 'A', 'B', 'C', 'D', SAND_CACHE)
-        is_valid = sand.validate_request(sand_req_from_client)['allowed']
+        is_valid = sand.validate_request(sand_req_from_client, sand_req_from_client.headers)['allowed']
     except SandError as e:
         assert "SAND server returned an error" in e.get()
     else:
@@ -125,7 +125,7 @@ def test_sand_service_request_denied_2(mock1):
 def test_sand_service_invalid_url():
     try:
         sand = SandService('http://sdfghjkl', 'A', 'B', 'C', 'D', SAND_CACHE)
-        sand.validate_request(sand_req_from_client)
+        sand.validate_request(sand_req_from_client, sand_req_from_client.headers)
     except SandError as e:
         assert "Service not able to authenticate" in e.get()
     else:
@@ -138,7 +138,7 @@ def test_sand_service_invalid_url():
 def test_sand_service_cannot_get_token(mock1):
     try:
         sand = SandService('http://sand-py-test', 'A', 'B', 'C', 'D', SAND_CACHE)
-        sand.validate_request(sand_req_from_client)
+        sand.validate_request(sand_req_from_client, sand_req_from_client.headers)
     except SandError as e:
         assert "Service not able to authenticate with SAND" in e.get()
     else:

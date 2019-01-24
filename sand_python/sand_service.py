@@ -67,11 +67,11 @@ class SandService():
             return service_token
 
 
-    def validate_request(self, request, opts=None):
+    def validate_request(self, request, request_headers, opts=None):
         """
         Validates incoming requests with their client_token
         """
-        client_token = self.__extract_client_token(request)
+        client_token = self.__extract_client_token(request_headers)
         # Check if the client request and token are in cache
         get_ret_data = self.cache.get(self.__get_client_token_cache_key(client_token))
         # If matches with cached key, clear to load the view
@@ -86,11 +86,11 @@ class SandService():
         return self.__validate_with_sand(client_token, service_token, opts)
 
 
-    def __extract_client_token(self, request):
+    def __extract_client_token(self, request_headers):
         try:
-            if request.headers['Authorization'].lower().startswith('bearer'):
+            if request_headers['Authorization'].lower().startswith('bearer'):
                 pattern = re.compile('Bearer *', re.IGNORECASE)
-                token = pattern.sub('', request.headers['Authorization'])
+                token = pattern.sub('', request_headers['Authorization'])
                 if token == "":
                     raise SandError('Failed to extract token from the request', 401)
                 return token

@@ -8,7 +8,7 @@ class SandMiddleware(object):
 
     def process_request(self, request):
         sand = SandService('http://sand-py-test', sand_client_id, sand_client_secret, sand_target_scopes, sand_service_scopes, django_cache)
-        is_valid = sand.validate_request(request)['allowed']
+        is_valid = sand.validate_request(request, {"Authorization": request.META["HTTP_AUTHORIZATION"]})['allowed']
         if is_valid != True:
             return JsonResponse({"Message": 'Request not permitted'}, status=401)
         else:
