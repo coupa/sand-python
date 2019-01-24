@@ -13,7 +13,8 @@ from sand_exceptions import SandError
 class SandService():
     """
     Sand Authentication
-        scopes is an array of scopes like ["hydra", "coupa"]
+        target scopes is a csv of scopes like "scope1,scope2"
+        service scopes is also a csv of scopes like "scope1,scope2"
     """
 
     def __init__(self, sand_token_site, sand_client_id, sand_client_secret, sand_target_scopes, sand_service_scopes, sand_cache):
@@ -29,7 +30,8 @@ class SandService():
         self.sand_token_url = sand_token_site+'/oauth2/token'
         self.sand_token_verify_url = sand_token_site+'/warden/token/allowed'
         self.sand_target_scopes = sand_target_scopes
-        self.sand_service_scopes = sand_service_scopes
+        # SAND expects service_scopes as one string with space as delimiter like "scope1 scope2"
+        self.sand_service_scopes = " ".join(sand_service_scopes.split(","))
         self.sand_service_resource = 'coupa:service:'+sand_client_id if sand_client_id else None
         self.cache = sand_cache
 

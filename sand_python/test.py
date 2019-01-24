@@ -73,8 +73,8 @@ RATELIMIT_ENABLED = True
 WTF_CSRF_ENABLED = False
 SEED = 0
 
-SAND_TARGET_SCOPES = 'target_scope'
-SAND_SERVICE_SCOPES = 'service_scope'
+SAND_TARGET_SCOPES = 'target_scope1,target_scope2'
+SAND_SERVICE_SCOPES = 'service_scope1,service_scope2'
 SAND_MAX_RETRIES = 3
 
 SAND_CACHE_DIR = os.getcwd()+'/cache/'
