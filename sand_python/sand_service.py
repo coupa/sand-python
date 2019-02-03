@@ -17,7 +17,7 @@ class SandService():
         service scopes is also a csv of scopes like "scope1,scope2"
     """
 
-    def __init__(self, sand_token_site, sand_client_id, sand_client_secret, sand_target_scopes, sand_service_scopes, sand_cache):
+    def __init__(self, sand_token_site, sand_token_path, sand_token_verify_path, sand_client_id, sand_client_secret, sand_target_scopes, sand_scopes, sand_cache, cache_root=''):
         if sand_token_site is None:
             raise SandError('sand_token_site value required')
         if sand_client_id is None:
@@ -27,29 +27,26 @@ class SandService():
         self.sand_token_site = sand_token_site
         self.sand_client_id = sand_client_id
         self.sand_client_secret = sand_client_secret
-        self.sand_token_url = sand_token_site+'/oauth2/token'
-        self.sand_token_verify_url = sand_token_site+'/warden/token/allowed'
+        self.sand_token_path = sand_token_path
+        self.sand_token_verify_path = sand_token_verify_path
+        self.sand_token_url = sand_token_site+sand_token_path
+        self.sand_token_verify_url = sand_token_site+sand_token_verify_path
         self.sand_target_scopes = sand_target_scopes
-        # SAND expects service_scopes as one string with space as delimiter like "scope1 scope2"
-        self.sand_service_scopes = " ".join(sand_service_scopes.split(","))
-        self.sand_service_resource = 'coupa:service:'+sand_client_id if sand_client_id else None
+        # SAND expects scopes as one string with space as delimiter like "scope1 scope2"
+        self.sand_scope = " ".join(sorted(sand_scopes.split(",")))
+        self.sand_service_resource = 'coupa:service:'+sand_client_id
         self.cache = sand_cache
+        self.cache_root = cache_root
 
-    def get_service_token(self):
-        scope = self.__service_scope()
-        return self.get_token(scope)
-
-    def get_client_token(self):
-        scope = self.__client_scope()
-        return self.get_token(scope)
-
-    def get_token(self, scope):
+    def get_token(self):
         """
         Requests a new service token for itself based on type of request. Either acting as a client or service
         """
-        service_token = self.cache.get('SERVICE_TOKEN'+'_'+scope)
+        # The following is the token of the client/service that is connecting to SAND
+        token_cache_key = self.__get_my_token_cache_key()
+        service_token = self.cache.get(token_cache_key)
         if service_token is None:
-            data = [('grant_type', 'client_credentials'), ('scope', scope)]
+            data = [('grant_type', 'client_credentials'), ('scope', self.sand_scope)]
             try:
                 sand_resp = requests.post(self.sand_token_url, auth=(self.sand_client_id, self.sand_client_secret), data=data)
                 if sand_resp.status_code != 200:
@@ -60,7 +57,7 @@ class SandService():
                     data = sand_resp.json()
                     if 'access_token' not in data or data['access_token'] == "":
                         raise SandError('Service not able to authenticate with SAND', 401)
-                    self.cache.set('SERVICE_TOKEN'+'_'+scope, data['access_token'], data['expires_in'])
+                    self.cache.set(token_cache_key, data['access_token'], data['expires_in'])
                     return data['access_token']
             except requests.ConnectionError:
                 # Sand is down, respond with 502 so client does not retry
@@ -69,23 +66,28 @@ class SandService():
             return service_token
 
 
-    def validate_request(self, request, request_headers, opts=None):
+    # With the addition of request_headers, as Django and Flask
+    # have different formats for headers, we don't need request as param
+    def validate_request(self, request_headers, opts={}):
         """
         Validates incoming requests with their client_token
         """
+        scopes = opts.get("scopes", self.sand_target_scopes.split(','))
         client_token = self.__extract_client_token(request_headers)
         # Check if the client request and token are in cache
-        get_ret_data = self.cache.get(self.__get_client_token_cache_key(client_token))
+        get_ret_data = self.cache.get(self.__get_client_token_cache_key(client_token, scopes))
         # If matches with cached key, clear to load the view
         if get_ret_data is not None:
             return get_ret_data
         # To validate with SAND, first get our own token
         try:
-            service_token = self.get_service_token()
+            service_token = self.get_token()
         except SandError:
             raise SandError('Service not able to authenticate with SAND', 502)
         # Validate the new client token with SAND
-        return self.__validate_with_sand(client_token, service_token, opts)
+        validation_resp = self.__validate_with_sand(client_token, service_token, scopes, opts)
+        self.cache.set(self.__get_client_token_cache_key(client_token, scopes), validation_resp, self.__get_cache_expiry_secs(validation_resp))
+        return validation_resp
 
 
     def __extract_client_token(self, request_headers):
@@ -101,13 +103,12 @@ class SandService():
             raise SandError('Did not find any authentication token', 401)
 
 
-    def __validate_with_sand(self, client_token, service_token, opts=None):
-        scopes = self.sand_target_scopes.split(',') if opts is None else opts.split(',')
+    def __validate_with_sand(self, client_token, service_token, scopes, opts={}):
         data = {
             "action": "any",
-            "context": {},
+            "context": opts.get("context", {}),
             "token": client_token,
-            "resource": self.sand_service_resource,
+            "resource": opts.get("resource", self.sand_service_resource),
             "scopes": scopes
         }
         headers = {
@@ -120,7 +121,6 @@ class SandService():
                 raise SandError('SAND server returned an error: ' + sand_resp.json()['error']['message'], 502)
             else:
                 ret_data = sand_resp.json()
-                self.cache.set(self.__get_client_token_cache_key(client_token), ret_data, self.__get_cache_expiry_secs(ret_data))
                 return ret_data
         except requests.ConnectionError:
             # Sand is down, respond with 502 so client does not retry
@@ -136,11 +136,27 @@ class SandService():
         return 0
 
 
-    def __client_scope(self):
-        return self.sand_target_scopes
+    def __get_client_token_cache_key(self, token, scopes):
+        return self.__get_token_cache_key(token, '_'.join(sorted(scopes)), self.sand_service_resource, 'client_tokens')
 
-    def __service_scope(self):
-        return self.sand_service_scopes
+    # Clears token of code using this lib
+    def clear_token_from_cache(self):
+        self.cache.delete(self.__get_my_token_cache_key())
+        return True
 
-    def __get_client_token_cache_key(self, token):
-        return token + ','.join(self.__client_scope())
+    def __get_my_token_cache_key(self):
+        # Service's own SAND token does not depend on resource or action
+        return self.__get_token_cache_key('SERVICE_TOKEN', self.sand_scope)
+
+    # cache_type is the sub-dir under root to separate service tokens and client tokens
+    def __get_token_cache_key(self, cache_key, scope, resource=None, action=None, cache_type=None):
+        ckey = self.cache_root
+        if cache_type is not None:
+            ckey += '/' + cache_type
+        ckey += '/' + cache_key
+        ckey += '/' + self.sand_scope.replace(' ', '_')
+        if resource is not None:
+            ckey += '/' + resource
+        if action is not None:
+            ckey += '/' + action
+        return ckey

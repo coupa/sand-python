@@ -5,6 +5,9 @@ from sand_exceptions import SandError
 
 class SandRequest():
 
+    def __init__(self):
+        self.is_retry = False
+
     def __retry(func):
         def sand_request(self, method, request_url, request_headers=None, request_body=None, max_retries=1):
             if not max_retries >= 1:
@@ -12,7 +15,8 @@ class SandRequest():
             for i in range(0, max_retries):
                 try:
                     resp = func(self, method, request_url, request_headers, request_body)
-                    if resp.status_code != 200:
+                    if resp.status_code == 401:
+                        self.is_retry = True
                         time.sleep((i+1)**2)
                         continue
                 except requests.ConnectionError:
@@ -27,15 +31,17 @@ class SandRequest():
         #sand_api = current_app.sand_service
 
         if request_headers is not None:
-            request_headers['Authorization'] = 'Bearer ' + sand_api.get_client_token()
+            request_headers['Authorization'] = 'Bearer ' + sand_api.get_token()
         else:
             request_headers = {
-                'Authorization': 'Bearer ' + sand_api.get_client_token(),
+                'Authorization': 'Bearer ' + sand_api.get_token(),
             }
         return request_headers
 
     @__retry
     def request(self, method, request_url, sand_api, request_headers=None, request_body=None):
+        if self.is_retry == True:
+            sand_api.clear_token_from_cache()
         req = requests.Request(method, request_url, headers=self.__build_header(sand_api, request_headers), data=request_body).prepare()
         session = requests.Session()
         return session.send(req)

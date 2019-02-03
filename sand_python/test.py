@@ -67,6 +67,8 @@ sand_req_from_client = requests.Request('POST', 'http://some-digital-checks/', h
 ENV = 'TESTING'
 TESTING = True
 SAND_TOKEN_SITE = 'http://sand-py-test'
+SAND_TOKEN_PATH = '/oauth2/token'
+SAND_TOKEN_VERIFY_PATH = '/warden/token/allowed'
 SAND_CLIENT_ID = 'token'
 SAND_CLIENT_SECRET = 'secret'
 RATELIMIT_ENABLED = True
@@ -88,12 +90,12 @@ SAND_CACHE = FileSystemCache(SAND_CACHE_DIR)
 # Test successful validation
 @mock.patch('sand_python.sand_service.requests.post', side_effect=mocked_requests_response1)
 def test_sand_service(mock1):
-    sand = SandService('http://sand-py-test', 'A', 'B', 'C', 'D', SAND_CACHE)
-    is_valid = sand.validate_request(sand_req_from_client, sand_req_from_client.headers)['allowed']
+    sand = SandService('http://sand-py-test', SAND_TOKEN_PATH, SAND_TOKEN_VERIFY_PATH, 'A', 'B', 'C', 'D', SAND_CACHE)
+    is_valid = sand.validate_request(sand_req_from_client.headers)['allowed']
     assert is_valid is True
     # Also test cache
-    sand = SandService('http://asdfghjkl', 'A', 'B', 'C', 'D', SAND_CACHE)
-    is_valid = sand.validate_request(sand_req_from_client, sand_req_from_client.headers)['allowed']
+    sand = SandService('http://asdfghjkl', SAND_TOKEN_PATH, SAND_TOKEN_VERIFY_PATH, 'A', 'B', 'C', 'D', SAND_CACHE)
+    is_valid = sand.validate_request(sand_req_from_client.headers)['allowed']
     # would've been False without cache
     assert is_valid is True
     # Clear cache
@@ -102,8 +104,8 @@ def test_sand_service(mock1):
 # Test denied request after getting good service token
 @mock.patch('sand_python.sand_service.requests.post', side_effect=mocked_requests_response2)
 def test_sand_service_request_denied(mock1):
-    sand = SandService('http://sand-py-test', 'A', 'B', 'C', 'D', SAND_CACHE)
-    is_valid = sand.validate_request(sand_req_from_client, sand_req_from_client.headers)['allowed']
+    sand = SandService('http://sand-py-test', SAND_TOKEN_PATH, SAND_TOKEN_VERIFY_PATH, 'A', 'B', 'C', 'D', SAND_CACHE)
+    is_valid = sand.validate_request(sand_req_from_client.headers)['allowed']
     assert is_valid is False
     # Clear cache
     sand.cache.clear()
@@ -112,8 +114,8 @@ def test_sand_service_request_denied(mock1):
 @mock.patch('sand_python.sand_service.requests.post', side_effect=mocked_requests_response4)
 def test_sand_service_request_denied_2(mock1):
     try:
-        sand = SandService('http://sand-py-test', 'A', 'B', 'C', 'D', SAND_CACHE)
-        is_valid = sand.validate_request(sand_req_from_client, sand_req_from_client.headers)['allowed']
+        sand = SandService('http://sand-py-test', SAND_TOKEN_PATH, SAND_TOKEN_VERIFY_PATH, 'A', 'B', 'C', 'D', SAND_CACHE)
+        is_valid = sand.validate_request(sand_req_from_client.headers)['allowed']
     except SandError as e:
         assert "SAND server returned an error" in e.get()
     else:
@@ -124,8 +126,8 @@ def test_sand_service_request_denied_2(mock1):
 # Failed to connect to Sand due to invalid url
 def test_sand_service_invalid_url():
     try:
-        sand = SandService('http://sdfghjkl', 'A', 'B', 'C', 'D', SAND_CACHE)
-        sand.validate_request(sand_req_from_client, sand_req_from_client.headers)
+        sand = SandService('http://sdfghjkl', SAND_TOKEN_PATH, SAND_TOKEN_VERIFY_PATH, 'A', 'B', 'C', 'D', SAND_CACHE)
+        sand.validate_request(sand_req_from_client.headers)
     except SandError as e:
         assert "Service not able to authenticate" in e.get()
     else:
@@ -137,8 +139,8 @@ def test_sand_service_invalid_url():
 @mock.patch('sand_python.sand_service.requests.post', side_effect=mocked_requests_response3)
 def test_sand_service_cannot_get_token(mock1):
     try:
-        sand = SandService('http://sand-py-test', 'A', 'B', 'C', 'D', SAND_CACHE)
-        sand.validate_request(sand_req_from_client, sand_req_from_client.headers)
+        sand = SandService('http://sand-py-test', SAND_TOKEN_PATH, SAND_TOKEN_VERIFY_PATH, 'A', 'B', 'C', 'D', SAND_CACHE)
+        sand.validate_request(sand_req_from_client.headers)
     except SandError as e:
         assert "Service not able to authenticate with SAND" in e.get()
     else:
@@ -148,6 +150,8 @@ def test_sand_service_cannot_get_token(mock1):
 
 ###### Test Sand Request (Outgoing Requests)
 app_sand_service = SandService(SAND_TOKEN_SITE,
+                               SAND_TOKEN_PATH,
+                               SAND_TOKEN_VERIFY_PATH,
                                SAND_CLIENT_ID,
                                SAND_CLIENT_SECRET,
                                SAND_TARGET_SCOPES,
