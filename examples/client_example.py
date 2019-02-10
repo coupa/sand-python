@@ -1,7 +1,7 @@
 import sand_python
 from sand_python.sand_exceptions import SandError
 from sand_python.sand_service import SandService
-from sand_python.sand_client import SandRequest
+from sand_python.sand_client import SandClient
 
 
 SAND_TOKEN_SITE = 'http://sand-url'
@@ -19,5 +19,5 @@ app_sand_service = SandService(SAND_TOKEN_SITE,
                                SAND_SERVICE_SCOPES,
                                SAND_CACHE)
 
-sand_req = SandRequest()
+sand_req = SandClient()
 resp = sand_req.request('POST', 'http://some-microservice/', app_sand_service, request_body={"something":"something"})

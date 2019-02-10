@@ -3,20 +3,19 @@ import requests
 from sand_service import SandService
 from sand_exceptions import SandError
 
-class SandRequest():
+class SandClient():
 
-    def __init__(self):
-        self.is_retry = False
 
     def __retry(func):
         def sand_request(self, method, request_url, request_headers=None, request_body=None, max_retries=1):
+            is_retry = False
             if not max_retries >= 1:
                 max_retries = 1
             for i in range(0, max_retries):
                 try:
-                    resp = func(self, method, request_url, request_headers, request_body)
+                    resp = func(self, method, request_url, request_headers, request_body, is_retry=is_retry)
                     if resp.status_code == 401:
-                        self.is_retry = True
+                        is_retry = True
                         time.sleep((i+1)**2)
                         continue
                 except requests.ConnectionError:
@@ -39,8 +38,8 @@ class SandRequest():
         return request_headers
 
     @__retry
-    def request(self, method, request_url, sand_api, request_headers=None, request_body=None):
-        if self.is_retry == True:
+    def request(self, method, request_url, sand_api, request_headers=None, request_body=None, is_retry=False):
+        if is_retry == True:
             sand_api.clear_token_from_cache()
         req = requests.Request(method, request_url, headers=self.__build_header(sand_api, request_headers), data=request_body).prepare()
         session = requests.Session()

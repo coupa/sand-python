@@ -6,7 +6,7 @@ from werkzeug.contrib.cache import FileSystemCache, SimpleCache
 
 from sand_exceptions import SandError
 from sand_service import SandService
-from sand_client import SandRequest
+from sand_client import SandClient
 
 ####   To run the tests use the following command
 ####   pytest --pyargs test.py
@@ -162,7 +162,7 @@ app_sand_service = SandService(SAND_TOKEN_SITE,
 @mock.patch('sand_python.sand_service.requests.post', side_effect=mocked_requests_response1)
 def test_sand_request_external_service_down(mock1):
     #create_global_sand(client)
-    sand_req = SandRequest()
+    sand_req = SandClient()
     try:
         x = sand_req.request('POST', 'http://some-something/', app_sand_service, request_body={"something":"something"})
     except SandError as e: 
@@ -175,7 +175,7 @@ def test_sand_request_external_service_down(mock1):
 @mock.patch('sand_python.sand_client.requests.Session.send', side_effect=mocked_requests_response5)
 def test_sand_request(mock1, mock2):
     #create_global_sand(client)
-    sand_req = SandRequest()
+    sand_req = SandClient()
     resp = sand_req.request('POST', 'http://some-something/', app_sand_service, request_body={"something":"something"})
     assert resp.status_code is 200
 
@@ -184,7 +184,7 @@ def test_sand_request(mock1, mock2):
 @mock.patch('sand_python.sand_client.requests.Session.send', side_effect=mocked_requests_response5)
 def test_sand_request_retries(mock1, mock2):
     #create_global_sand(client)
-    sand_req = SandRequest()
+    sand_req = SandClient()
     start_time = datetime.utcnow()
     # This should stall the test for a bit because of retrying with sleeps inbetween
     resp = sand_req.request('GET', 'http://some-something/', app_sand_service, max_retries=3)
