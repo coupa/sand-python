@@ -14,10 +14,10 @@ class SandService():
     """
     Sand Authentication
         target scopes is a csv of scopes like "scope1,scope2"
-        service scopes is also a csv of scopes like "scope1,scope2"
+        sand scope is a space delimited list of scopes like "scope1 scope2"
     """
 
-    def __init__(self, sand_token_site, sand_token_path, sand_token_verify_path, sand_client_id, sand_client_secret, sand_target_scopes, sand_scopes, sand_cache, cache_root=''):
+    def __init__(self, sand_token_site, sand_token_path, sand_token_verify_path, sand_client_id, sand_client_secret, sand_target_scopes, sand_scope, sand_cache, cache_root=''):
         if sand_token_site is None:
             raise SandError('sand_token_site value required')
         if sand_client_id is None:
@@ -33,7 +33,7 @@ class SandService():
         self.sand_token_verify_url = sand_token_site+sand_token_verify_path
         self.sand_target_scopes = sand_target_scopes
         # SAND expects scopes as one string with space as delimiter like "scope1 scope2"
-        self.sand_scope = " ".join(sorted(sand_scopes.split(",")))
+        self.sand_scope = sand_scope
         self.sand_service_resource = 'coupa:service:'+sand_client_id
         self.cache = sand_cache
         self.cache_root = cache_root
@@ -43,10 +43,10 @@ class SandService():
         Requests a new service token for itself based on type of request. Either acting as a client or service
         """
         # The following is the token of the client/service that is connecting to SAND
-        token_cache_key = self.__get_my_token_cache_key()
+        token_cache_key = self.__get_my_token_cache_key(self.__get_self_sand_scope())
         service_token = self.cache.get(token_cache_key)
         if service_token is None:
-            data = [('grant_type', 'client_credentials'), ('scope', self.sand_scope)]
+            data = [('grant_type', 'client_credentials'), ('scope', self.__get_self_sand_scope())]
             try:
                 sand_resp = requests.post(self.sand_token_url, auth=(self.sand_client_id, self.sand_client_secret), data=data)
                 if sand_resp.status_code != 200:
@@ -140,13 +140,18 @@ class SandService():
         return self.__get_token_cache_key(token, '_'.join(sorted(scopes)), self.sand_service_resource, 'client_tokens')
 
     # Clears token of code using this lib
-    def clear_token_from_cache(self):
-        self.cache.delete(self.__get_my_token_cache_key())
+    def clear_token_from_cache(self, scope=None):
+        if scope is None:
+            scope = self.__get_self_sand_scope()
+        self.cache.delete(self.__get_my_token_cache_key(scope))
         return True
 
-    def __get_my_token_cache_key(self):
+    def __get_my_token_cache_key(self, scope):
         # Service's own SAND token does not depend on resource or action
-        return self.__get_token_cache_key('SERVICE_TOKEN', self.sand_scope)
+        return self.__get_token_cache_key('SERVICE_TOKEN', '_'.join(sorted(scope.split(" "))))
+
+    def __get_self_sand_scope(self):
+        return self.sand_scope
 
     # cache_type is the sub-dir under root to separate service tokens and client tokens
     def __get_token_cache_key(self, cache_key, scope, resource=None, action=None, cache_type=None):
@@ -154,7 +159,7 @@ class SandService():
         if cache_type is not None:
             ckey += '/' + cache_type
         ckey += '/' + cache_key
-        ckey += '/' + self.sand_scope.replace(' ', '_')
+        ckey += '/' + scope
         if resource is not None:
             ckey += '/' + resource
         if action is not None:
