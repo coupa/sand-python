@@ -15,5 +15,5 @@ When a service receives a request with an OAuth bearer token, it verifies the to
 ### For Micro Service
 
 ```
-pip install -e https://github.com/coupa/sand-python
+pip install git+https://github.com/coupa/sand-python.git
 ```
