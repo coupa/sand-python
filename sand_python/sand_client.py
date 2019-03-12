@@ -1,7 +1,7 @@
 import time
 import requests
-from sand_service import SandService
-from sand_exceptions import SandError
+from .sand_service import SandService
+from .sand_exceptions import SandError
 
 class SandClient():
 

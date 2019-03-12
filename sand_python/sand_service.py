@@ -8,7 +8,7 @@ import json
 import re
 import requests
 from dateutil import parser
-from sand_exceptions import SandError
+from .sand_exceptions import SandError
 
 class SandService():
     """
