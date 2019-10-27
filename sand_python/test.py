@@ -4,9 +4,9 @@ import mock
 import os
 from werkzeug.contrib.cache import FileSystemCache, SimpleCache
 
-from sand_exceptions import SandError
-from sand_service import SandService
-from sand_client import SandClient
+from .sand_exceptions import SandError
+from .sand_service import SandService
+from .sand_client import SandClient
 
 ####   To run the tests use the following command
 ####   pytest --pyargs test.py
@@ -115,7 +115,7 @@ def test_sand_service_request_denied(mock1):
 def test_sand_service_request_denied_2(mock1):
     try:
         sand = SandService('http://sand-py-test', SAND_TOKEN_PATH, SAND_TOKEN_VERIFY_PATH, 'A', 'B', 'C', 'D', SAND_CACHE)
-        is_valid = sand.validate_request(sand_req_from_client.headers)['allowed']
+        sand.validate_request(sand_req_from_client.headers)['allowed']
     except SandError as e:
         assert "SAND server returned an error" in e.get()
     else:
@@ -164,7 +164,7 @@ def test_sand_request_external_service_down(mock1):
     #create_global_sand(client)
     sand_req = SandClient()
     try:
-        x = sand_req.request('POST', 'http://some-something/', app_sand_service, request_body={"something":"something"})
+        sand_req.request('POST', 'http://some-something/', app_sand_service, request_body={"something":"something"})
     except SandError as e: 
         assert 'External Service Down' in e.get()
     else:
@@ -187,6 +187,20 @@ def test_sand_request_retries(mock1, mock2):
     sand_req = SandClient()
     start_time = datetime.utcnow()
     # This should stall the test for a bit because of retrying with sleeps inbetween
-    resp = sand_req.request('GET', 'http://some-something/', app_sand_service, max_retries=3)
+    sand_req.request('GET', 'http://some-something/', app_sand_service, max_retries=3)
     total_time = (datetime.utcnow() - start_time).total_seconds()
     assert total_time > 5
+
+# Test Sand Client with timeout
+@mock.patch('sand_python.sand_service.requests.post', side_effect=mocked_requests_response1)
+def test_sand_request_timeout(mock1):
+    sand_req = SandClient()
+    start_time = datetime.utcnow()
+    try:
+        # TO-DO: figure out how to mock timeouts with the requests library
+        sand_req.request('GET', 'http://www.mocky.io/v2/5db23ffa3500006500f54f12?mocky-delay=20000ms', app_sand_service, timeout=10.0)
+    except SandError: 
+        total_time = (datetime.utcnow() - start_time).total_seconds()
+    else:
+        assert True is False
+    assert total_time > 9 and total_time < 12

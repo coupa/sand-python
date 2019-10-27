@@ -7,18 +7,18 @@ class SandClient():
 
 
     def __retry(func):
-        def sand_request(self, method, request_url, request_headers=None, request_body=None, max_retries=1):
+        def sand_request(self, method, request_url, request_headers=None, request_body=None, max_retries=1, timeout=60.0):
             is_retry = False
             if not max_retries >= 1:
                 max_retries = 1
             for i in range(0, max_retries):
                 try:
-                    resp = func(self, method, request_url, request_headers, request_body, is_retry=is_retry)
+                    resp = func(self, method, request_url, request_headers, request_body, is_retry=is_retry, timeout=timeout)
                     if resp.status_code == 401:
                         is_retry = True
                         time.sleep((i+1)**2)
                         continue
-                except requests.ConnectionError:
+                except (requests.ConnectionError, requests.exceptions.ReadTimeout):
                     if i == (max_retries - 1):
                         raise SandError("External Service Down", 502)
                     continue
@@ -38,10 +38,10 @@ class SandClient():
         return request_headers
 
     @__retry
-    def request(self, method, request_url, sand_api, request_headers=None, request_body=None, is_retry=False):
+    def request(self, method, request_url, sand_api, request_headers=None, request_body=None, is_retry=False, timeout=60.0):
         if is_retry == True:
             sand_api.clear_token_from_cache()
         my_sand_token = sand_api.get_token()
         req = requests.Request(method, request_url, headers=self.__build_header(my_sand_token, request_headers), data=request_body).prepare()
         session = requests.Session()
-        return session.send(req)
+        return session.send(req, timeout=timeout)
