@@ -7,13 +7,13 @@ class SandClient():
 
 
     def __retry(func):
-        def sand_request(self, method, request_url, request_headers=None, request_body=None, max_retries=1, timeout=60.0):
+        def sand_request(self, method, request_url, sand_api, request_headers=None, request_body=None, max_retries=1, timeout=60.0):
             is_retry = False
             if not max_retries >= 1:
                 max_retries = 1
             for i in range(0, max_retries):
                 try:
-                    resp = func(self, method, request_url, request_headers, request_body, is_retry=is_retry, timeout=timeout)
+                    resp = func(self, method, request_url, sand_api, request_headers, request_body, is_retry=is_retry, timeout=timeout)
                     if resp.status_code == 401:
                         is_retry = True
                         time.sleep((i+1)**2)
