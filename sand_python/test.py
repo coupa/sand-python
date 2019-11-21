@@ -58,6 +58,8 @@ def mocked_requests_response4(*args, **kwargs):
 def mocked_requests_response5(*args, **kwargs):
     if args[0].method == 'POST':
         return MockResponse({"success":"some response"}, 200)
+    elif args[0].method == 'GET':
+        return MockResponse({"success":"some response"}, 200)
     else:
         return MockResponse(None, 401)
 
@@ -187,7 +189,7 @@ def test_sand_request_retries(mock1, mock2):
     sand_req = SandClient()
     start_time = datetime.utcnow()
     # This should stall the test for a bit because of retrying with sleeps inbetween
-    sand_req.request('GET', 'http://some-something/', app_sand_service, max_retries=3)
+    sand_req.request('PUT', 'http://some-something/', app_sand_service, max_retries=3)
     total_time = (datetime.utcnow() - start_time).total_seconds()
     assert total_time > 5
 
@@ -204,3 +206,15 @@ def test_sand_request_timeout(mock1):
     else:
         assert True is False
     assert total_time > 9 and total_time < 12
+
+# Test Positional Arguments
+@mock.patch('sand_python.sand_service.requests.post', side_effect=mocked_requests_response1)
+@mock.patch('sand_python.sand_client.requests.Session.send', side_effect=mocked_requests_response5)
+def test_sand_request_arguments(mock1, mock2):
+    sand_req = SandClient()
+    headers = {"Ocr-Type": 'enhanced', "Content-Type": 'application/json', 'X-DES-Client': 'FDS', 'X-Coupa-Instance': 'test', 'X-Correlation-Id': '12345'}
+    try:
+        sand_req.request('GET', 'http://some-something/', sand_api=app_sand_service, request_headers=headers)
+        sand_req.request(sand_api=app_sand_service, request_headers=headers, method='POST', timeout=10, request_url='http://some-something/')
+    except:
+        assert True is False
