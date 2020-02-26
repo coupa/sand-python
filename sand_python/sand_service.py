@@ -35,6 +35,7 @@ class SandService():
         # SAND expects scopes as one string with space as delimiter like "scope1 scope2"
         self.sand_scope = sand_scope
         self.sand_service_resource = 'coupa:service:'+sand_client_id
+        print(self.sand_service_resource)
         self.cache = sand_cache
         self.cache_root = cache_root
 
