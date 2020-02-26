@@ -88,6 +88,7 @@ class SandService():
         # Validate the new client token with SAND
         validation_resp = self.__validate_with_sand(client_token, service_token, scopes, opts)
         self.cache.set(self.__get_client_token_cache_key(client_token, scopes), validation_resp, self.__get_cache_expiry_secs(validation_resp))
+        print(validation_resp)
         return validation_resp
 
 
