@@ -50,6 +50,7 @@ class SandService():
             data = [('grant_type', 'client_credentials'), ('scope', self.__get_self_sand_scope())]
             try:
                 sand_resp = requests.post(self.sand_token_url, auth=(self.sand_client_id, self.sand_client_secret), data=data)
+                print(sand_resp)
                 if sand_resp.status_code != 200:
                     # Unable to get token from SAND so responding with the whole json respone for not being a 200 OK
                     # It's the job of the client to retry when making a request and it fails so no retries here
