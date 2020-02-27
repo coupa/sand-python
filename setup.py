@@ -39,4 +39,7 @@ setup(
         'requests>=2.24.0',
         'python-dateutil>=2.7.5'
     ]
+    extras_require={
+        "test": ["pytest", "cachelib"]
+    },
 )
