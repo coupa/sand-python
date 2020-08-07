@@ -102,3 +102,5 @@ ENV/
 
 # OSX
 *.DS_Store
+
+.idea/

@@ -5,10 +5,20 @@
 """
 
 import json
+import logging
 import re
 import requests
+import sys
 from dateutil import parser
 from .sand_exceptions import SandError
+
+
+logger = logging.getLogger(__name__)
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.DEBUG)
+logger.addHandler(handler)
+logger.setLevel(logging.DEBUG)
+
 
 class SandService():
     """
@@ -45,16 +55,23 @@ class SandService():
         # The following is the token of the client/service that is connecting to SAND
         token_cache_key = self.__get_my_token_cache_key(self.__get_self_sand_scope())
         service_token = self.cache.get(token_cache_key)
+        logger.debug(f"get_token service_token: {service_token}")
         if service_token is None:
             data = [('grant_type', 'client_credentials'), ('scope', self.__get_self_sand_scope())]
             try:
+                logger.debug(f"get_token Calling {self.sand_token_url} with")
+                logger.debug(f"get_token self.sand_client_id: {self.sand_client_id}")
+                logger.debug(f"get_token data: {data}")
                 sand_resp = requests.post(self.sand_token_url, auth=(self.sand_client_id, self.sand_client_secret), data=data)
+                logger.debug(f"get_token sand_resp: {sand_resp.json()}")
                 if sand_resp.status_code != 200:
+                    logger.debug(f"get_token sand_resp.status_code != 200: {sand_resp.json()['error_description']}")
                     # Unable to get token from SAND so responding with the whole json respone for not being a 200 OK
                     # It's the job of the client to retry when making a request and it fails so no retries here
                     raise SandError('Service not able to authenticate with SAND: ' + sand_resp.json()['error_description'], 401)
                 else:
                     data = sand_resp.json()
+                    logger.debug(f"get_token data: {data}")
                     if 'access_token' not in data or data['access_token'] == "":
                         raise SandError('Service not able to authenticate with SAND', 401)
                     self.cache.set(token_cache_key, data['access_token'], data['expires_in'])
@@ -74,6 +91,7 @@ class SandService():
         """
         scopes = opts.get("scopes", self.sand_target_scopes.split(','))
         client_token = self.__extract_client_token(request_headers)
+        logger.debug(f"validate_request client_token: {client_token}")
         # Check if the client request and token are in cache
         get_ret_data = self.cache.get(self.__get_client_token_cache_key(client_token, scopes))
         # If matches with cached key, clear to load the view
@@ -81,10 +99,18 @@ class SandService():
             return get_ret_data
         # To validate with SAND, first get our own token
         try:
+            logger.debug("validate_request About to call self.get_token")
             service_token = self.get_token()
-        except SandError:
+            logger.debug(f"validate_request service_token: {service_token}")
+        except SandError as e:
+            logger.error(f"validate_request SandError caught when calling self.get_token: {e}")
             raise SandError('Service not able to authenticate with SAND', 502)
         # Validate the new client token with SAND
+        logger.debug("validate_request About to call self.__validate_with_sand with")
+        logger.debug(f"validate_request client_token: {client_token}")
+        logger.debug(f"validate_request service_token: {service_token}")
+        logger.debug(f"validate_request scopes: {scopes}")
+        logger.debug(f"validate_request opts: {opts}")
         validation_resp = self.__validate_with_sand(client_token, service_token, scopes, opts)
         self.cache.set(self.__get_client_token_cache_key(client_token, scopes), validation_resp, self.__get_cache_expiry_secs(validation_resp))
         return validation_resp
@@ -116,11 +142,13 @@ class SandService():
         }
         try:
             sand_resp = requests.post(self.sand_token_verify_url, headers=headers, data=json.dumps(data))
+            logger.debug(f"__validate_with_sand sand_resp: {sand_resp}")
             if sand_resp.status_code != 200:
                 # Unable to authenticate against sand
                 raise SandError('SAND server returned an error: ' + sand_resp.json()['error']['message'], 502)
             else:
                 ret_data = sand_resp.json()
+                logger.debug(f"sand_resp.status_code is 200. ret_data: {ret_data}")
                 return ret_data
         except requests.ConnectionError:
             # Sand is down, respond with 502 so client does not retry
