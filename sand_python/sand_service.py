@@ -142,7 +142,7 @@ class SandService():
         }
         try:
             sand_resp = requests.post(self.sand_token_verify_url, headers=headers, data=json.dumps(data))
-            logger.debug(f"__validate_with_sand sand_resp: {sand_resp}")
+            logger.debug(f"__validate_with_sand sand_resp: {sand_resp.json()}")
             if sand_resp.status_code != 200:
                 # Unable to authenticate against sand
                 raise SandError('SAND server returned an error: ' + sand_resp.json()['error']['message'], 502)
