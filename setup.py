@@ -36,7 +36,7 @@ setup(
     ],
     keywords='sand',
     install_requires=[
-        'requests==2.20.1',
-        'python-dateutil==2.7.5'
+        'requests>=2.24.0',
+        'python-dateutil>=2.7.5'
     ]
 )
